@@ -1,0 +1,251 @@
+import numpy as np
+from tensorflow import keras
+from tensorflow.keras import layers
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+from tensorflow.compat.v1.keras.layers import CuDNNLSTM
+from keras.models import Model
+from keras.callbacks import EarlyStopping
+from keras.regularizers import l2
+import pickle
+from sklearn.model_selection import StratifiedKFold,TimeSeriesSplit
+from sklearn.preprocessing import LabelEncoder
+from keras.callbacks import TensorBoard
+
+# pre-processing dataset
+
+data = pd.read_csv('protein-secondary-structure.train', skiprows = 9, delim_whitespace = True, header = None, names =['amino','label'])
+amino_map = data.copy()
+second_map = data.copy()
+amino_map.dropna(inplace = True)
+second_map.dropna(inplace = True)
+amino_map = amino_map['amino']
+second_map = second_map['label']
+data.fillna(0,inplace = True)
+
+def add_pading(ls,lenght):
+    if lenght != len(ls):
+        no_padding = lenght - len(ls)
+        ls.extend([0]*no_padding)
+        return ls
+    else:
+        return ls
+
+
+#reformat the dataset 
+def re_formatdata(data):
+    temp = []
+    total = []
+    labeltemp = []
+    label = []
+    for idx,rows in data.iterrows():
+        if rows['label'] != 0:
+            temp.append(rows['amino'])
+            labeltemp.append(rows['label'])
+        else:
+            if temp:
+                total.append(temp)
+                label.append(labeltemp)
+            temp = []
+            labeltemp =[]
+            continue
+
+    return total,label,data
+
+def map_int(ls):
+    amino_dict = {}
+    code = 1
+    for i in ls:
+        amino_dict[i] = code
+        code += 1
+
+    return amino_dict
+
+
+def encoding_to_int(df,first_map,second_map):
+    for idx,rows in df.iterrows():
+        row_encode = []
+        for code in rows['amino']:
+            if code != 0:
+                row_encode.append(first_map.get(code))
+            else :
+                row_encode.append(0)
+
+        df.at[idx,"amino"] = row_encode
+        row_encode = []
+        for code in rows['label']:
+            if code != 0:
+                row_encode.append(second_map.get(code))
+            else :
+                row_encode.append(0)
+        df.at[idx,"label"] = row_encode
+        row_encode = []
+
+    return df
+
+def metrics_protein(result,prediction):
+    
+    count = 0
+    percentage_ls = []
+    for idx,val in enumerate(result):
+        # prediction[idx] = prediction[:len(val)]
+        for idx2,val2 in enumerate(val):
+            if val2 == prediction[idx][idx2]:
+                count += 1
+        percentage = count/len(val)
+        count = 0
+        print(percentage)
+        print('==============')
+        percentage_ls.append(percentage)
+
+    return sum(percentage_ls)/len(percentage_ls)
+
+total,label,data = re_formatdata(data)
+amino_map.drop_duplicates(inplace = True)
+second_map.drop_duplicates(inplace = True)
+amino_map = amino_map.tolist()
+second_map = second_map.tolist()
+
+amino_map = map_int(amino_map)
+second_map = map_int(second_map)
+
+
+data = pd.DataFrame({'amino':total,'label':label})
+
+
+# data.to_csv('data_format_train.csv',index = False)
+# print(aaaa)
+data['amino_count'] = data['amino'].apply(lambda x: len(x))
+
+lenght = data['amino_count'].max()
+print(lenght)
+# padding sequences
+
+
+for idx,rows in data.iterrows():
+    data.at[idx,'amino'] = add_pading(rows['amino'],lenght)
+    data.at[idx,'label'] = add_pading(rows['label'],lenght)
+
+data = encoding_to_int(data,amino_map,second_map)
+data.drop(['amino_count'],axis = 1, inplace = True)
+amino = np.array(data['amino'].tolist())
+label = np.array(data['label'].tolist())
+
+
+x_train, x_test, y_train, y_test = train_test_split(amino, label, test_size=0.2)
+
+
+x_train = to_categorical(x_train)
+x_test = to_categorical(x_test)
+y_train = to_categorical(y_train)
+y_test = to_categorical(y_test)
+
+amino = to_categorical(amino)
+label = to_categorical(label)
+# print(amino.shape)
+# print(label)
+# print('==============')
+# # print(x_train.shape)
+# # print(x_test.shape)
+# # print(y_train.shape)
+# # print(y_test.shape)
+# # print('===')
+# # print(aaaa)
+
+# kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
+cv_score = []
+tscv = TimeSeriesSplit(n_splits=5)
+
+for train,test in tscv.split(amino,label):
+    model = keras.Sequential()
+    model.add(layers.SimpleRNN(128, input_shape=(498,21),return_sequences=True))#recurrent layer , 128 neurons
+    model.add(layers.GRU(64,return_sequences=True))#recurrent layer 1, 64 neurons
+    model.add(layers.SimpleRNN(32, return_sequences=True)) #recurrent layer 2, 32 neurons
+    model.add(layers.SimpleRNN(16,return_sequences=True)) #recurrent layer 3, 16 neurons
+    model.add(layers.Dense(8,activation ='tanh')) #Dense layer, 4 neurons tanh activation - classification output
+
+    model.add(layers.Dropout(0.5))
+    model.add(layers.Dense(4,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
+
+    model.summary()
+
+    opt = keras.optimizers.Adam(learning_rate=0.0001)
+    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+
+    model.summary()
+
+    # es = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
+    history = model.fit(
+        amino[train], label[train],
+        epochs=250, batch_size=32,
+        validation_data=(amino[test], label[test]),
+        verbose = 2
+        # callbacks=[es]
+        )
+    scores = model.evaluate(amino[test], label[test], verbose=2)
+    print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+    cv_score.append(scores[1] * 100)
+print("%.2f%% (+/- %.2f%%)" % (np.mean(cv_score), np.std(cv_score)))
+# plt.plot(history.history['accuracy'])
+# plt.plot(history.history['val_accuracy'])
+# plt.title('model accuracy')
+# plt.ylabel('accuracy')
+# plt.xlabel('epoch')
+# plt.legend(['train', 'val'], loc='upper left')
+# plt.show()
+
+# plt.plot(history.history['loss'])
+# plt.plot(history.history['val_loss'])
+# plt.title('model loss')
+# plt.ylabel('loss')
+# plt.xlabel('epoch')
+# plt.legend(['train', 'val'], loc='upper left')
+# plt.show()
+
+# def metric(result,predict):
+#     for idx,val in enumerate(result):
+
+# model.save('bestmodel')
+# model = keras.models.load_model('bestmodel')
+# scores = model.evaluate(to_categorical(amino), to_categorical(label))
+
+# # make a prediction
+data = pd.read_csv('protein-secondary-structure.test', skiprows = 9, delim_whitespace = True, header = None, names =['amino','label'])
+amino_map = data.copy()
+second_map = data.copy()
+amino_map.dropna(inplace = True)
+second_map.dropna(inplace = True)
+amino_map = amino_map['amino']
+second_map = second_map['label']
+data.fillna(0,inplace = True)
+total,label,data = re_formatdata(data)
+amino_map.drop_duplicates(inplace = True)
+second_map.drop_duplicates(inplace = True)
+amino_map = amino_map.tolist()
+second_map = second_map.tolist()
+
+amino_map = map_int(amino_map)
+second_map = map_int(second_map)
+data['amino_count'] = data['amino'].apply(lambda x: len(x))
+
+lenght = data['amino_count'].max()
+for idx,rows in data.iterrows():
+    data.at[idx,'amino'] = add_pading(rows['amino'],lenght)
+    data.at[idx,'label'] = add_pading(rows['label'],lenght)
+
+data = encoding_to_int(data,amino_map,second_map)
+data.drop(['amino_count'],axis = 1, inplace = True)
+amino = np.array(data['amino'].tolist())
+label = np.array(data['label'].tolist())
+
+amino = to_categorical(amino)
+
+
+ynew = model.predict_classes(amino)
+# show the inputs and predicted outputs
+acc = metrics_protein(ynew,label)
+print(acc)
+
