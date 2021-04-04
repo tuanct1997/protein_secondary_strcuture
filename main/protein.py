@@ -176,7 +176,8 @@ tscv = TimeSeriesSplit(n_splits=5)
 model = keras.Sequential()
 # model.add(layers.Dense(128, input_shape = (498,21) , activation ='relu'))
 # model.add(layers.Dense(8,activation ='relu'))
-model.add(layers.LSTM(128, input_shape=(None,21),return_sequences=True))#recurrent layer , 128 neurons
+model.add(layers.Masking(mask_value=0, input_shape=(None, 21)))
+model.add(layers.LSTM(128,return_sequences=True))#recurrent layer , 128 neurons
 model.add(layers.LSTM(64,return_sequences=True))#recurrent layer 1, 64 neurons
 model.add(layers.LSTM(32, return_sequences=True)) #recurrent layer 2, 32 neurons
 model.add(layers.LSTM(8,return_sequences=True)) #recurrent layer 3, 16 neurons
@@ -195,7 +196,7 @@ model.summary()
 es = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
 history = model.fit(
     x_train, y_train,
-    epochs=500, batch_size=1,
+    epochs=500, batch_size=32,
     validation_data=(x_test, y_test),
     verbose = 2,
     callbacks=[es]
