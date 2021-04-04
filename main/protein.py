@@ -196,7 +196,7 @@ model.summary()
 es = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
 history = model.fit(
     x_train, y_train,
-    epochs=2, batch_size=32,
+    epochs=5000, batch_size=32,
     validation_data=(x_test, y_test),
     verbose = 2,
     callbacks=[es]
