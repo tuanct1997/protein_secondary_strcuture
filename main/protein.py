@@ -181,10 +181,10 @@ model.add(layers.LSTM(128,return_sequences=True))#recurrent layer , 128 neurons
 model.add(layers.LSTM(64,return_sequences=True))#recurrent layer 1, 64 neurons
 model.add(layers.LSTM(32, return_sequences=True)) #recurrent layer 2, 32 neurons
 model.add(layers.LSTM(8,return_sequences=True)) #recurrent layer 3, 16 neurons
-model.add(layers.Dense(8,activation ='tanh')) #Dense layer, 4 neurons tanh activation - classification output
+model.add(layers.Dense(8,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 
 model.add(layers.Dropout(0.5))
-model.add(layers.Dense(4,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
+model.add(layers.Dense(4,activation='relu'))#Dense layer, 4 neurons softmax activation - classification output
 
 model.summary()
 
@@ -196,7 +196,7 @@ model.summary()
 es = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
 history = model.fit(
     x_train, y_train,
-    epochs=5000, batch_size=32,
+    epochs=2, batch_size=32,
     validation_data=(x_test, y_test),
     verbose = 2,
     callbacks=[es]
@@ -274,6 +274,6 @@ print('------')
 print(ynew[0])
 print('-------')
 # show the inputs and predicted outputs
-acc = metrics_protein(ynew,label)
+acc = metrics_protein(label,ynew)
 print(acc)
 
