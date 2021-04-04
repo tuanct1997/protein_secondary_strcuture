@@ -93,12 +93,11 @@ def metrics_protein(result,prediction):
     for idx,val in enumerate(result):
         # prediction[idx] = prediction[:len(val)]
         for idx2,val2 in enumerate(val):
-            if val2 == prediction[idx][idx2]:
+            if val2 == prediction[idx][idx2] and val2 != 0:
                 count += 1
-        percentage = count/len(val)
+        leng = [i for i in val if i != 0]
+        percentage = count/len(leng)
         count = 0
-        print(percentage)
-        print('==============')
         percentage_ls.append(percentage)
 
     return sum(percentage_ls)/len(percentage_ls)
@@ -131,13 +130,13 @@ for idx,rows in data.iterrows():
 
 data = encoding_to_int(data,amino_map,second_map)
 data.drop(['amino_count'],axis = 1, inplace = True)
-amino = np.array(data['amino'].tolist())
-label = np.array(data['label'].tolist())
+amino = np.array(data['amino'].to_list())
+label = np.array(data['label'].to_list())
 
 
 x_train, x_test, y_train, y_test = train_test_split(amino, label, test_size=0.2)
 
-
+# print(a)
 x_train = to_categorical(x_train)
 x_test = to_categorical(x_test)
 y_train = to_categorical(y_train)
@@ -159,35 +158,51 @@ label = to_categorical(label)
 cv_score = []
 tscv = TimeSeriesSplit(n_splits=5)
 
-for train,test in tscv.split(amino,label):
-    model = keras.Sequential()
-    model.add(layers.SimpleRNN(128, input_shape=(498,21),return_sequences=True))#recurrent layer , 128 neurons
-    model.add(layers.GRU(64,return_sequences=True))#recurrent layer 1, 64 neurons
-    model.add(layers.SimpleRNN(32, return_sequences=True)) #recurrent layer 2, 32 neurons
-    model.add(layers.SimpleRNN(16,return_sequences=True)) #recurrent layer 3, 16 neurons
-    model.add(layers.Dense(8,activation ='tanh')) #Dense layer, 4 neurons tanh activation - classification output
+# for train,test in tscv.split(amino,label):
+    # model = Sequential()
+# model.add(Conv2D(32, (3, 3), input_shape=(3, 150, 150)))
+# model.add(Activation('relu'))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    model.add(layers.Dropout(0.5))
-    model.add(layers.Dense(4,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
+# model.add(Conv2D(32, (3, 3)))
+# model.add(Activation('relu'))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    model.summary()
+# model.add(Conv2D(64, (3, 3)))
+# model.add(Activation('relu'))
+# model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    opt = keras.optimizers.Adam(learning_rate=0.0001)
-    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
-    model.summary()
+model = keras.Sequential()
+# model.add(layers.Dense(128, input_shape = (498,21) , activation ='relu'))
+# model.add(layers.Dense(8,activation ='relu'))
+model.add(layers.LSTM(128, input_shape=(None,21),return_sequences=True))#recurrent layer , 128 neurons
+model.add(layers.LSTM(64,return_sequences=True))#recurrent layer 1, 64 neurons
+model.add(layers.LSTM(32, return_sequences=True)) #recurrent layer 2, 32 neurons
+model.add(layers.LSTM(8,return_sequences=True)) #recurrent layer 3, 16 neurons
+model.add(layers.Dense(8,activation ='tanh')) #Dense layer, 4 neurons tanh activation - classification output
 
-    # es = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
-    history = model.fit(
-        amino[train], label[train],
-        epochs=250, batch_size=32,
-        validation_data=(amino[test], label[test]),
-        verbose = 2
-        # callbacks=[es]
-        )
-    scores = model.evaluate(amino[test], label[test], verbose=2)
-    print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
-    cv_score.append(scores[1] * 100)
+model.add(layers.Dropout(0.5))
+model.add(layers.Dense(4,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
+
+model.summary()
+
+opt = keras.optimizers.Adam(learning_rate=0.0001)
+model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+
+model.summary()
+
+es = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
+history = model.fit(
+    x_train, y_train,
+    epochs=500, batch_size=1,
+    validation_data=(x_test, y_test),
+    verbose = 2,
+    callbacks=[es]
+    )
+scores = model.evaluate(x_test, y_test, verbose=2)
+print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+cv_score.append(scores[1] * 100)
 print("%.2f%% (+/- %.2f%%)" % (np.mean(cv_score), np.std(cv_score)))
 # plt.plot(history.history['accuracy'])
 # plt.plot(history.history['val_accuracy'])
@@ -221,6 +236,7 @@ second_map.dropna(inplace = True)
 amino_map = amino_map['amino']
 second_map = second_map['label']
 data.fillna(0,inplace = True)
+
 total,label,data = re_formatdata(data)
 amino_map.drop_duplicates(inplace = True)
 second_map.drop_duplicates(inplace = True)
@@ -229,6 +245,13 @@ second_map = second_map.tolist()
 
 amino_map = map_int(amino_map)
 second_map = map_int(second_map)
+
+
+data = pd.DataFrame({'amino':total,'label':label})
+
+
+# data.to_csv('data_format_train.csv',index = False)
+# print(aaaa)
 data['amino_count'] = data['amino'].apply(lambda x: len(x))
 
 lenght = data['amino_count'].max()
@@ -245,6 +268,10 @@ amino = to_categorical(amino)
 
 
 ynew = model.predict_classes(amino)
+print(label[0])
+print('------')
+print(ynew[0])
+print('-------')
 # show the inputs and predicted outputs
 acc = metrics_protein(ynew,label)
 print(acc)
