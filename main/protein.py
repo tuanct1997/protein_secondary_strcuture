@@ -93,10 +93,10 @@ def metrics_protein(result,prediction):
     for idx,val in enumerate(result):
         # prediction[idx] = prediction[:len(val)]
         for idx2,val2 in enumerate(val):
-            if val2 == prediction[idx][idx2] and val2 != 0:
+            if val2 == prediction[idx][idx2]:
                 count += 1
-        leng = [i for i in val if i != 0]
-        percentage = count/len(leng)
+        # leng = [i for i in val if i != 0]
+        percentage = count/len(val)
         count = 0
         percentage_ls.append(percentage)
 
@@ -133,7 +133,7 @@ data.drop(['amino_count'],axis = 1, inplace = True)
 amino = np.array(data['amino'].to_list())
 label = np.array(data['label'].to_list())
 
-
+print(amino)
 x_train, x_test, y_train, y_test = train_test_split(amino, label, test_size=0.2)
 
 # print(a)
@@ -141,6 +141,7 @@ x_train = to_categorical(x_train)
 x_test = to_categorical(x_test)
 y_train = to_categorical(y_train)
 y_test = to_categorical(y_test)
+
 
 amino = to_categorical(amino)
 label = to_categorical(label)
@@ -153,7 +154,6 @@ label = to_categorical(label)
 # # print(y_test.shape)
 # # print('===')
 # # print(aaaa)
-
 # kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
 cv_score = []
 tscv = TimeSeriesSplit(n_splits=5)
@@ -177,26 +177,35 @@ model = keras.Sequential()
 # model.add(layers.Dense(128, input_shape = (498,21) , activation ='relu'))
 # model.add(layers.Dense(8,activation ='relu'))
 model.add(layers.Masking(mask_value=0, input_shape=(498, 21)))
-model.add(layers.LSTM(128,return_sequences=True))#recurrent layer , 128 neurons
+# model.add(layers.LSTM(128,return_sequences = True))#recurrent layer , 128 neurons
 model.add(layers.LSTM(64,return_sequences=True))#recurrent layer 1, 64 neurons
 model.add(layers.LSTM(32, return_sequences=True)) #recurrent layer 2, 32 neurons
 model.add(layers.LSTM(8,return_sequences=True)) #recurrent layer 3, 16 neurons
-model.add(layers.Dense(8,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+# model.add(layers.Dense(128,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 
-model.add(layers.Dropout(0.5))
-model.add(layers.Dense(4,activation='relu'))#Dense layer, 4 neurons softmax activation - classification output
+# # model.add(layers.Dropout(0.5))
+# model.add(layers.Dense(64,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+# # model.add(layers.Dropout(0.5))
+# model.add(layers.Dense(32,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+# # model.add(layers.Dropout(0.5))
+# model.add(layers.Dense(16,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+# # model.add(layers.Dropout(0.5))
+# model.add(layers.Dense(8,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+model.add(layers.Dropout(0.8))
+# model.add(layers.Flatten())
+model.add(layers.Dense(4,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
 
 model.summary()
 
 opt = keras.optimizers.Adam(learning_rate=0.0001)
-model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=opt, loss='mean_squared_error', metrics=['accuracy'])
 
 model.summary()
 
 es = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
 history = model.fit(
     x_train, y_train,
-    epochs=5000, batch_size=32,
+    epochs=700, batch_size=100,
     validation_data=(x_test, y_test),
     verbose = 2,
     callbacks=[es]
@@ -258,7 +267,7 @@ data['amino_count'] = data['amino'].apply(lambda x: len(x))
 lenght = data['amino_count'].max()
 for idx,rows in data.iterrows():
     data.at[idx,'amino'] = add_pading(rows['amino'],lenght)
-    data.at[idx,'label'] = add_pading(rows['label'],lenght)
+    # data.at[idx,'label'] = add_pading(rows['label'],lenght)
 
 data = encoding_to_int(data,amino_map,second_map)
 data.drop(['amino_count'],axis = 1, inplace = True)
@@ -271,7 +280,7 @@ amino = to_categorical(amino)
 ynew = model.predict_classes(amino)
 print(label[0])
 print('------')
-print(ynew[0])
+print(ynew[10])
 print('-------')
 # show the inputs and predicted outputs
 acc = metrics_protein(label,ynew)
