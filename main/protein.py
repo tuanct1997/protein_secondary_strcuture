@@ -123,7 +123,6 @@ lenght = data['amino_count'].max()
 print(lenght)
 # padding sequences
 
-
 for idx,rows in data.iterrows():
     data.at[idx,'amino'] = add_pading(rows['amino'],lenght)
     data.at[idx,'label'] = add_pading(rows['label'],lenght)
@@ -133,7 +132,9 @@ data.drop(['amino_count'],axis = 1, inplace = True)
 amino = np.array(data['amino'].to_list())
 label = np.array(data['label'].to_list())
 
-print(amino)
+# amino = keras.preprocessing.sequence.pad_sequences(amino)
+# label = keras.preprocessing.sequence.pad_sequences(label)
+# print(amino)
 x_train, x_test, y_train, y_test = train_test_split(amino, label, test_size=0.2)
 
 # print(a)
@@ -142,7 +143,10 @@ x_test = to_categorical(x_test)
 y_train = to_categorical(y_train)
 y_test = to_categorical(y_test)
 
-
+# print(x_train)
+# print(x_train.shape)
+# print(y_train.shape)
+# print(a)
 amino = to_categorical(amino)
 label = to_categorical(label)
 # print(amino.shape)
@@ -179,8 +183,8 @@ model = keras.Sequential()
 model.add(layers.Masking(mask_value=0, input_shape=(498, 21)))
 # model.add(layers.LSTM(128,return_sequences = True))#recurrent layer , 128 neurons
 model.add(layers.Bidirectional(layers.GRU(64,return_sequences=True, activation = 'relu')))#recurrent layer 1, 64 neurons
-model.add(layers.GRU(32, return_sequences=True, activation = 'relu')) #recurrent layer 2, 32 neurons
-model.add(layers.GRU(8,return_sequences=True)) #recurrent layer 3, 16 neurons
+model.add(layers.Bidirectional(GRU(32, return_sequences=True, activation = 'relu'))) #recurrent layer 2, 32 neurons
+model.add(layers.Bidirectional(GRU(8,return_sequences=True))) #recurrent layer 3, 16 neurons
 # model.add(layers.Dense(128,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 
 # # model.add(layers.Dropout(0.5))
