@@ -178,8 +178,8 @@ model = keras.Sequential()
 # model.add(layers.Dense(8,activation ='relu'))
 model.add(layers.Masking(mask_value=0, input_shape=(498, 21)))
 # model.add(layers.LSTM(128,return_sequences = True))#recurrent layer , 128 neurons
-model.add(layers.LSTM(64,return_sequences=True))#recurrent layer 1, 64 neurons
-model.add(layers.LSTM(32, return_sequences=True)) #recurrent layer 2, 32 neurons
+model.add(layers.Bidirectional(layers.LSTM(64,return_sequences=True, activation = 'relu')))#recurrent layer 1, 64 neurons
+model.add(layers.LSTM(32, return_sequences=True, activation = 'relu')) #recurrent layer 2, 32 neurons
 model.add(layers.LSTM(8,return_sequences=True)) #recurrent layer 3, 16 neurons
 # model.add(layers.Dense(128,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 
@@ -194,7 +194,7 @@ model.add(layers.LSTM(8,return_sequences=True)) #recurrent layer 3, 16 neurons
 model.add(layers.Dropout(0.8))
 # model.add(layers.Flatten())
 model.add(layers.Dense(4,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
-
+model.add(layers.Activation('softmax'))
 model.summary()
 
 opt = keras.optimizers.Adam(learning_rate=0.0001)
