@@ -68,14 +68,12 @@ def map_int(ls):
 
 def encoding_to_int(df,first_map,second_map):
     for idx,rows in df.iterrows():
-        if idx == 0:
         row_encode = []
         for code in rows['amino']:
             if code != 0:
                 row_encode.append(first_map.get(code))
             else :
                 row_encode.append(20)
-        if idx == 0:
         df.at[idx,"amino"] = row_encode
         row_encode = []
         for code in rows['label']:
