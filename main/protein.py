@@ -197,9 +197,9 @@ model.add(layers.Masking(mask_value=0., input_shape=(498, 20)))
 # model.add(layers.Dense(128,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 
 # model.add(layers.Dropout(0.5))
-model.add(layers.Dense(64,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+# model.add(layers.Dense(64,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 # model.add(layers.Dropout(0.5))
-model.add(layers.Dense(32,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+# model.add(layers.Dense(32,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 # model.add(layers.Dropout(0.5))
 model.add(layers.Dense(16,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 # model.add(layers.Dropout(0.5))
