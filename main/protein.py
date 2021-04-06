@@ -69,16 +69,13 @@ def map_int(ls):
 def encoding_to_int(df,first_map,second_map):
     for idx,rows in df.iterrows():
         if idx == 0:
-            print(rows)
         row_encode = []
         for code in rows['amino']:
             if code != 0:
                 row_encode.append(first_map.get(code))
             else :
-                print('!!!!!!!!!1')
                 row_encode.append(20)
         if idx == 0:
-            print(row_encode)
         df.at[idx,"amino"] = row_encode
         row_encode = []
         for code in rows['label']:
@@ -130,8 +127,6 @@ for idx,rows in data.iterrows():
     data.at[idx,'amino'] = add_pading(rows['amino'],lenght)
     data.at[idx,'label'] = add_pading(rows['label'],lenght)
 
-print(data['amino'])
-print('!++!++!+!+!+!')
 data = encoding_to_int(data,amino_map,second_map)
 data.drop(['amino_count'],axis = 1, inplace = True)
 amino = np.array(data['amino'].to_list())
@@ -194,28 +189,28 @@ model.add(layers.Masking(mask_value=0., input_shape=(498, 20)))
 # model.add(layers.Bidirectional(layers.GRU(64,return_sequences=True, activation = 'relu')))#recurrent layer 1, 64 neurons
 # model.add(layers.Bidirectional(layers.GRU(32, return_sequences=True, activation = 'relu'))) #recurrent layer 2, 32 neurons
 # model.add(layers.Bidirectional(layers.GRU(8,return_sequences=True))) #recurrent layer 3, 16 neurons
-# model.add(layers.Dense(128,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+model.add(layers.Dense(128,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 
-# model.add(layers.Dropout(0.5))
-# model.add(layers.Dense(64,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
-# model.add(layers.Dropout(0.5))
+model.add(layers.Dropout(0.5))
+model.add(layers.Dense(64,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+model.add(layers.Dropout(0.5))
 # model.add(layers.Dense(32,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 # model.add(layers.Dropout(0.5))
-model.add(layers.Dense(16,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
-model.add(layers.Dropout(0.5))
-model.add(layers.Dense(8,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
-model.add(layers.Dropout(0.5))
+# model.add(layers.Dense(16,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+# model.add(layers.Dropout(0.5))
+# model.add(layers.Dense(8,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+# model.add(layers.Dropout(0.5))
 # model.add(layers.Flatten())
 model.add(layers.Dense(3,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
 model.add(layers.Activation('softmax'))
-model.summary()
+# model.summary()
 
-opt = keras.optimizers.Adam(learning_rate=0.001)
+opt = keras.optimizers.SGD(learning_rate=0.001)
 model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
 model.summary()
 
-es = EarlyStopping(monitor='val_loss', patience=2, verbose=1)
+es = EarlyStopping(monitor='val_loss', patience=2, verbose=2)
 history = model.fit(
     x_train, y_train,
     epochs=500, batch_size=32,
