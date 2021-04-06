@@ -157,7 +157,7 @@ y_test = tf.one_hot(y_test, depth =3)
 # label = to_categorical(label)
 # amino = to_categorical(amino)
 amino = tf.one_hot(amino, depth = 20)
-label1 = label.copy()
+# label1 = label.copy()
 # print(amino.shape)
 # print(label)
 # print('==============')
@@ -211,7 +211,7 @@ model.add(layers.Activation('softmax'))
 model.summary()
 
 opt = keras.optimizers.Adam(learning_rate=0.001)
-model.compile(optimizer=opt, loss='mean_squared_error', metrics=['accuracy'])
+model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
 model.summary()
 
@@ -250,52 +250,53 @@ print("%.2f%% (+/- %.2f%%)" % (np.mean(cv_score), np.std(cv_score)))
 # model = keras.models.load_model('bestmodel')
 # scores = model.evaluate(to_categorical(amino), to_categorical(label))
 
-# # make a prediction
-# data = pd.read_csv('protein-secondary-structure.test', skiprows = 9, delim_whitespace = True, header = None, names =['amino','label'])
-# amino_map = data.copy()
-# second_map = data.copy()
-# amino_map.dropna(inplace = True)
-# second_map.dropna(inplace = True)
-# amino_map = amino_map['amino']
-# second_map = second_map['label']
-# data.fillna(0,inplace = True)
+# make a prediction
+data = pd.read_csv('protein-secondary-structure.test', skiprows = 9, delim_whitespace = True, header = None, names =['amino','label'])
+amino_map = data.copy()
+second_map = data.copy()
+amino_map.dropna(inplace = True)
+second_map.dropna(inplace = True)
+amino_map = amino_map['amino']
+second_map = second_map['label']
+data.fillna(0,inplace = True)
 
-# total,label,data = re_formatdata(data)
-# amino_map.drop_duplicates(inplace = True)
-# second_map.drop_duplicates(inplace = True)
-# amino_map = amino_map.tolist()
-# second_map = second_map.tolist()
+total,label,data = re_formatdata(data)
+amino_map.drop_duplicates(inplace = True)
+second_map.drop_duplicates(inplace = True)
+amino_map = amino_map.tolist()
+second_map = second_map.tolist()
 
-# amino_map = map_int(amino_map)
-# second_map = map_int(second_map)
-
-
-# data = pd.DataFrame({'amino':total,'label':label})
+amino_map = map_int(amino_map)
+second_map = map_int(second_map)
 
 
-# # data.to_csv('data_format_train.csv',index = False)
-# # print(aaaa)
-# data['amino_count'] = data['amino'].apply(lambda x: len(x))
+data = pd.DataFrame({'amino':total,'label':label})
 
-# lenght = data['amino_count'].max()
-# for idx,rows in data.iterrows():
-#     data.at[idx,'amino'] = add_pading(rows['amino'],lenght)
-#     # data.at[idx,'label'] = add_pading(rows['label'],lenght)
 
-# data = encoding_to_int(data,amino_map,second_map)
-# data.drop(['amino_count'],axis = 1, inplace = True)
-# amino = np.array(data['amino'].tolist())
-# label = np.array(data['label'].tolist())
+# data.to_csv('data_format_train.csv',index = False)
+# print(aaaa)
+data['amino_count'] = data['amino'].apply(lambda x: len(x))
+
+lenght = data['amino_count'].max()
+for idx,rows in data.iterrows():
+    data.at[idx,'amino'] = add_pading(rows['amino'],lenght)
+    data.at[idx,'label'] = add_pading(rows['label'],lenght)
+
+data = encoding_to_int(data,amino_map,second_map)
+data.drop(['amino_count'],axis = 1, inplace = True)
+amino = np.array(data['amino'].tolist())
+label = np.array(data['label'].tolist())
 
 # amino = to_categorical(amino)
+amino = tf.one_hot(amino, depth = 20)
 
 
 ynew = model.predict_classes(amino)
-print(label1)
+print(label)
 print('------')
 print(ynew)
 print('-------')
 # show the inputs and predicted outputs
-acc = metrics_protein(label1[88:],ynew)
+acc = metrics_protein(label,ynew)
 print(acc)
 
