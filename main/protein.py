@@ -187,9 +187,9 @@ model.add(layers.Masking(mask_value=0., input_shape=(498, 20)))
 # model.add(layers.Bidirectional(layers.GRU(64,return_sequences=True, activation = 'relu')))#recurrent layer 1, 64 neurons
 # model.add(layers.Bidirectional(layers.GRU(32, return_sequences=True, activation = 'relu'))) #recurrent layer 2, 32 neurons
 # model.add(layers.Bidirectional(layers.GRU(8,return_sequences=True))) #recurrent layer 3, 16 neurons
-model.add(layers.Dense(128,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+# model.add(layers.Dense(128,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 
-model.add(layers.Dropout(0.5))
+# model.add(layers.Dropout(0.5))
 model.add(layers.Dense(64,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 model.add(layers.Dropout(0.5))
 # model.add(layers.Dense(32,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
@@ -203,7 +203,7 @@ model.add(layers.Dense(3,activation='softmax'))#Dense layer, 4 neurons softmax a
 model.add(layers.Activation('softmax'))
 # model.summary()
 
-opt = keras.optimizers.SGD(learning_rate=0.001)
+opt = keras.optimizers.SGD(learning_rate=0.0001)
 model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
 model.summary()
