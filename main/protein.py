@@ -194,7 +194,7 @@ model.add(layers.Masking(mask_value=0., input_shape=(498, 20)))
 # model.add(layers.Bidirectional(layers.GRU(64,return_sequences=True, activation = 'relu')))#recurrent layer 1, 64 neurons
 # model.add(layers.Bidirectional(layers.GRU(32, return_sequences=True, activation = 'relu'))) #recurrent layer 2, 32 neurons
 # model.add(layers.Bidirectional(layers.GRU(8,return_sequences=True))) #recurrent layer 3, 16 neurons
-model.add(layers.Dense(128,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+# model.add(layers.Dense(128,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 
 # model.add(layers.Dropout(0.5))
 model.add(layers.Dense(64,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
@@ -291,9 +291,9 @@ print("%.2f%% (+/- %.2f%%)" % (np.mean(cv_score), np.std(cv_score)))
 
 
 ynew = model.predict_classes(amino)
-print(label1[88])
+print(label1)
 print('------')
-print(ynew[0])
+print(ynew)
 print('-------')
 # show the inputs and predicted outputs
 acc = metrics_protein(label1[88:],ynew)
