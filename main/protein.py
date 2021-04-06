@@ -98,9 +98,9 @@ def metrics_protein(result,prediction):
     for idx,val in enumerate(result):
         # prediction[idx] = prediction[:len(val)]
         for idx2,val2 in enumerate(val):
-            if val2 == prediction[idx][idx2] and val2 != 0:
+            if val2 == prediction[idx][idx2] and val2 != 20:
                 count += 1
-        leng = [i for i in val if i != 0]
+        leng = [i for i in val if i != 20]
         percentage = count/len(val)
         count = 0
         percentage_ls.append(percentage)
@@ -154,17 +154,17 @@ y_test = tf.one_hot(y_test, depth =3)
 
 # print(x_train)
 # print(x_train.shape)
-
-amino = to_categorical(amino)
+# label = to_categorical(label)
+# amino = to_categorical(amino)
+amino = tf.one_hot(amino, depth = 20)
 label1 = label.copy()
-label = to_categorical(label)
 # print(amino.shape)
 # print(label)
 # print('==============')
-# # print(x_train.shape)
-# # print(x_test.shape)
-# # print(y_train.shape)
-# # print(y_test.shape)
+print(x_train.shape)
+print(x_test.shape)
+print(y_train.shape)
+print(y_test.shape)
 # # print('===')
 # # print(aaaa)
 # kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=seed)
@@ -189,7 +189,7 @@ tscv = TimeSeriesSplit(n_splits=5)
 model = keras.Sequential()
 # model.add(layers.Dense(128, input_shape = (498,21) , activation ='relu'))
 # model.add(layers.Dense(8,activation ='relu'))
-model.add(layers.Masking(mask_value=0, input_shape=(498, 21)))
+model.add(layers.Masking(mask_value=0., input_shape=(498, 20)))
 # model.add(layers.LSTM(128,return_sequences = True))#recurrent layer , 128 neurons
 # model.add(layers.Bidirectional(layers.GRU(64,return_sequences=True, activation = 'relu')))#recurrent layer 1, 64 neurons
 # model.add(layers.Bidirectional(layers.GRU(32, return_sequences=True, activation = 'relu'))) #recurrent layer 2, 32 neurons
@@ -206,7 +206,7 @@ model.add(layers.Dense(128,activation ='relu')) #Dense layer, 4 neurons tanh act
 # model.add(layers.Dense(8,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 model.add(layers.Dropout(0.8))
 # model.add(layers.Flatten())
-model.add(layers.Dense(4,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
+model.add(layers.Dense(3,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
 model.add(layers.Activation('softmax'))
 model.summary()
 
@@ -218,7 +218,7 @@ model.summary()
 es = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
 history = model.fit(
     x_train, y_train,
-    epochs=500, batch_size=32,
+    epochs=2, batch_size=32,
     validation_data=(x_test, y_test),
     verbose = 2,
     callbacks=[es]
