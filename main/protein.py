@@ -202,7 +202,7 @@ model.add(layers.Masking(mask_value=0., input_shape=(498, 20)))
 # model.add(layers.Dense(32,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 # model.add(layers.Dropout(0.5))
 model.add(layers.Dense(16,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
-# model.add(layers.Dropout(0.5))
+model.add(layers.Dropout(0.5))
 model.add(layers.Dense(8,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 model.add(layers.Dropout(0.5))
 # model.add(layers.Flatten())
@@ -215,7 +215,7 @@ model.compile(optimizer=opt, loss='mean_squared_error', metrics=['accuracy'])
 
 model.summary()
 
-es = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
+es = EarlyStopping(monitor='val_loss', patience=2, verbose=1)
 history = model.fit(
     x_train, y_train,
     epochs=500, batch_size=32,
