@@ -101,7 +101,7 @@ def metrics_protein(result,prediction):
             if val2 == prediction[idx][idx2] and val2 != 20:
                 count += 1
         leng = [i for i in val if i != 20]
-        percentage = count/len(val)
+        percentage = count/len(leng)
         count = 0
         percentage_ls.append(percentage)
 
@@ -218,7 +218,7 @@ model.summary()
 es = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
 history = model.fit(
     x_train, y_train,
-    epochs=2, batch_size=32,
+    epochs=500, batch_size=32,
     validation_data=(x_test, y_test),
     verbose = 2,
     callbacks=[es]
