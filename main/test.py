@@ -183,9 +183,9 @@ model = keras.Sequential()
 # model.add(layers.Masking(mask_value=0., input_shape=20))
 # model.add(layers.LSTM(128,return_sequences = False, input_shape = (5,20)))#recurrent layer , 128 neurons
 model.add(layers.Bidirectional(layers.GRU(64,return_sequences=True, activation = 'relu'), input_shape = (5,20)))#recurrent layer 1, 64 neurons
-model.add(layers.Bidirectional(layers.GRU(32, return_sequences=True, activation = 'relu'))) #recurrent layer 2, 32 neurons
+model.add(layers.Bidirectional(layers.GRU(32, return_sequences=False, activation = 'relu'))) #recurrent layer 2, 32 neurons
 # model.add(layers.Bidirectional(layers.GRU(8,return_sequences=True))) #recurrent layer 3, 16 neurons
-model.add(layers.Dense(128,activation ='relu',input_shape = (5,20))) #Dense layer, 4 neurons tanh activation - classification output
+# model.add(layers.Dense(128,activation ='relu',input_shape = (5,20))) #Dense layer, 4 neurons tanh activation - classification output
 
 # model.add(layers.Dropout(0.5))
 # model.add(layers.Dense(64,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
