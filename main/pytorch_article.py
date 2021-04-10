@@ -67,21 +67,28 @@ class MLP(torch.nn.Module):
         x = self.softmax(x)
         return x
 
-
-def add_pading(ls,lenght):
-    if lenght != len(ls):
-        no_padding = lenght - len(ls)
-        ls.extend([0]*no_padding)
-        return ls
-    else:
-        return ls
-
 def article_padding(ls):
-    padding = [0,0]
-    ls.insert(0,padding)
-    ls.insert(len(ls),x)
-    print(ls)
+    ls.insert(0,0)
+    ls.insert(0,0)
+    ls.insert(len(ls),0)
+    ls.insert(len(ls),0)
     return ls
+
+
+def final_df(df):
+    x = []
+    y = []
+    for idx,rows in df.iterrows():
+        chunks = []
+        y.extend(rows['label'])
+        padd_amino = article_padding(rows['amino'])
+        chunks = [padd_amino[x:x+5] for x in range(0, len(padd_amino)-4)]
+        x.extend(chunks)
+
+    new_df = pd.DataFrame({'amino':x,'label':y})
+
+    return new_df 
+        
 
 #reformat the dataset 
 def re_formatdata(data):
@@ -94,9 +101,8 @@ def re_formatdata(data):
             temp.append(rows['amino'])
             labeltemp.append(rows['label'])
         else:
-            if temp:
-                total.append(temp)
-                label.append(labeltemp)
+            total.append(temp)
+            label.append(labeltemp)
             temp = []
             labeltemp =[]
             continue
@@ -120,14 +126,14 @@ def encoding_to_int(df,first_map,second_map):
             if code != 0:
                 row_encode.append(first_map.get(code))
             else :
-                row_encode.append(20)
+                row_encode.append(-10)
         df.at[idx,"amino"] = row_encode
         row_encode = []
         for code in rows['label']:
             if code != 0:
                 row_encode.append(second_map.get(code))
             else :
-                row_encode.append(20)
+                row_encode.append(-10)
         df.at[idx,"label"] = row_encode
         row_encode = []
 
@@ -151,8 +157,6 @@ def metrics_protein(result,prediction):
 
 totaltrain,labeltrain= re_formatdata(DATA_TRAIN)
 totaltest,labeltest= re_formatdata(DATA_TEST)
-print(totaltest)
-print(labeltest)
 
 amino_map.drop_duplicates(inplace = True)
 second_map.drop_duplicates(inplace = True)
@@ -162,25 +166,22 @@ second_map = second_map.tolist()
 amino_map = map_int(amino_map)
 second_map = map_int(second_map)
 
-processed_train = pd.DataFrame({'amino':totaltrain,'label':labeltrain})
-processed_test = pd.DataFrame({'amino':totaltest,'label':labeltest})
+train = pd.DataFrame({'amino':totaltrain,'label':labeltrain})
+test = pd.DataFrame({'amino':totaltest,'label':labeltest})
 
-
-data['amino_count'] = data['amino'].apply(lambda x: len(x))
-
-lenght = processed_train['amino_count'].max()
 # padding sequences
-x = article_padding(rows['amino'][0])
-print(x)
-print(a)
-for idx,rows in data.iterrows():
-    data.at[idx,'amino'] = add_pading(rows['amino'],lenght)
-    data.at[idx,'label'] = add_pading(rows['label'],lenght)
 
-data = encoding_to_int(data,amino_map,second_map)
-data.drop(['amino_count'],axis = 1, inplace = True)
-amino = np.array(data['amino'].to_list())
-label = np.array(data['label'].to_list())
+processed_train = final_df(train)
+processed_test = final_df(test)
+print(processed_train.info())
+print(processed_train.head(10))
+
+processed_train = encoding_to_int(processed_train,amino_map,second_map)
+processed_test = encoding_to_int(processed_test,amino_map,second_map)
+print(processed_train.info())
+print(processed_train.head(10))
+amino = np.array(processed_train['amino'].to_list())
+label = np.array(processed_train['label'].to_list())
 
 x_train, x_test, y_train, y_test = train_test_split(amino, label, test_size=0.2)
 
