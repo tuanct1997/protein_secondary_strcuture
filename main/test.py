@@ -181,22 +181,22 @@ model = keras.Sequential()
 # model.add(layers.Dense(128, input_shape = (498,21) , activation ='relu'))
 # model.add(layers.Dense(8,activation ='relu'))
 # model.add(layers.Masking(mask_value=0., input_shape=20))
-# model.add(layers.LSTM(128,return_sequences = True))#recurrent layer , 128 neurons
+model.add(layers.LSTM(128,return_sequences = False, input_shape = (5,20)))#recurrent layer , 128 neurons
 # model.add(layers.Bidirectional(layers.GRU(64,return_sequences=True, activation = 'relu')))#recurrent layer 1, 64 neurons
 # model.add(layers.Bidirectional(layers.GRU(32, return_sequences=True, activation = 'relu'))) #recurrent layer 2, 32 neurons
 # model.add(layers.Bidirectional(layers.GRU(8,return_sequences=True))) #recurrent layer 3, 16 neurons
-# model.add(layers.Dense(128,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+model.add(layers.Dense(128,activation ='relu',input_shape = (5,20))) #Dense layer, 4 neurons tanh activation - classification output
 
 # model.add(layers.Dropout(0.5))
-model.add(layers.Dense(64,activation ='relu',input_shape = (5,20))) #Dense layer, 4 neurons tanh activation - classification output
-model.add(layers.Dropout(0.5))
+# model.add(layers.Dense(64,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+# model.add(layers.Dropout(0.5))
 # model.add(layers.Dense(32,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 # model.add(layers.Dropout(0.5))
 # model.add(layers.Dense(16,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 # model.add(layers.Dropout(0.5))
 # model.add(layers.Dense(8,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 # model.add(layers.Dropout(0.5))
-model.add(layers.Flatten())
+# model.add(layers.Flatten())
 model.add(layers.Dense(3,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
 # model.summary()
 
@@ -205,10 +205,10 @@ model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy
 
 model.summary()
 
-es = EarlyStopping(monitor='val_loss', patience=10, verbose=2, min_delta = 1e-2)
+es = EarlyStopping(monitor='val_loss', patience=10, verbose=2, min_delta = 1e-3)
 history = model.fit(
     x_train, y_train,
-    epochs=500, batch_size=1,
+    epochs=500, batch_size=32,
     validation_data=(x_test, y_test),
     verbose = 2,
     callbacks=[es]
