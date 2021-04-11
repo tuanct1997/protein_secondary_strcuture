@@ -54,19 +54,16 @@ class LSTM(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.lstm = nn.LSTM(20, 300) # (10, 50)
-        self.lstm1 = nn.LSTM(300, 200) # (10, 50)
-        self.lstm2 = nn.LSTM(200, 100) # (10, 50)
+        self.lstm = nn.LSTM(20, 128) # (10, 50)
+        self.lstm1 = nn.LSTM(128, 64) # (10, 50)
         self.dropout = nn.Dropout(0.5) # 0.1
-        self.dense = nn.Linear(100, 3) # (50, 16)
+        self.dense = nn.Linear(64, 3) # (50, 16)
         self.act = nn.ReLU()
 
     def forward(self, x):
         # print(x.shape)
         lstm_out, lstm_hidden = self.lstm(x)
         lstm_out, lstm_hidden = self.lstm1(lstm_out)
-        lstm_out, lstm_hidden = self.lstm2(lstm_out)
-
         lstm_out = lstm_out[:,-1,:]
         drop_out = self.dropout(lstm_out)
         output = self.dense(drop_out)
@@ -251,7 +248,7 @@ model2 = LSTM()
 model2.to(device)
 model.to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=0.0001)
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 train_losses = []
 val_losses = []
 
