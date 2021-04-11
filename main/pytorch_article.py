@@ -236,12 +236,12 @@ model3.to(device)
 model2.to(device)
 model.to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.SGD(model.parameters(), lr=0.001)
 train_losses = []
 val_losses = []
 paitent = 0
 old = 0
-for epoch in range(100):
+for epoch in range(250):
     running_loss = 0.0
     for i, data in enumerate(loader, 0):
         inputs,labels = data
@@ -257,18 +257,19 @@ for epoch in range(100):
         if i == len(loader)-1 :
             print('[%d, %5d] loss: %.5f' %
                   (epoch + 1, i + 1, running_loss / 270))
-            print(running_loss/270 - old)
-            if running_loss/270 - old > 1e-3 :
-                print('aaaaa')
-                paitent += 1
-            else :
-                print('23232')
-                paitent = 0
-            old = running_loss / 270
-            running_loss = 0.0
-    if paitent == 5:
-        print("EARLY STOP")
-        break
+    #         print(running_loss/270 - old)
+    #         if running_loss/270 - old > 1e-4 :
+    #             print('aaaaa')
+    #             paitent += 1
+    #         else :
+    #             print('23232')
+    #             paitent = 0
+    #         if running_loss/270 < old :
+    #             old = running_loss / 270
+    #         running_loss = 0.0
+    # if paitent == 5:
+    #     print("EARLY STOP")
+    #     break
 
 print("DONE")
 outputs = model3(x_test)
@@ -276,21 +277,15 @@ print(outputs)
 print(outputs.shape)
 _, predicted = torch.max(outputs,1)
 
-acc = check_acc(y_test, predicted)
-print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-print(acc)
-print(a)
-percentage_ls = []
-for idx,val1 in enumerate(outputs):
-    count = 0
-    for idx1,val2 in enumerate(val1):
-        val = torch.argmax(val2)
-        print("THIS VAL {}".format(val))
-        print("THIS Y {}".format(y_test[idx][idx1]))
-        if val == y_test[idx][idx1]:
-            count += 1
-    leng = [i for i in y_test[idx] if i != 20]
-    percentage_ls.append(count/len(leng))
+aminotest = np.array(processed_test['amino'].to_list())
+labeltest = torch.from_numpy(np.array(processed_test['label'].to_list()).flatten()).to(device)
+aminotest = torch.from_numpy(tf.one_hot(aminotest, depth =20).numpy()).to(device)
+outputs_test = model3(aminotest)
+_, predictedtest = torch.max(outputs_test,1)
 
-print("FINAL ACC = {}".format(sum(percentage_ls)/len(percentage_ls)))
+val_acc = check_acc(y_test, predicted)
+test_acc = check_acc(labeltest, predictedtest)
+print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+print("VAL_ACC : {}".format(val_acc))
+print("TEST_ACC : {}".format(test_acc))
 
