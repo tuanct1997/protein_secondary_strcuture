@@ -17,6 +17,7 @@ from sklearn.metrics import accuracy_score
 from torch.utils.data import DataLoader, TensorDataset
 from torch import Tensor
 # Load dataset
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 DATA_TRAIN = pd.read_csv('protein-secondary-structure.train', skiprows = 9, delim_whitespace = True, header = None, names =['amino','label'])
 DATA_TEST = pd.read_csv('protein-secondary-structure.test', skiprows = 9, delim_whitespace = True, header = None, names =['amino','label'])
 
@@ -192,21 +193,24 @@ label = np.array(processed_train['label'].to_list()).flatten()
 
 x_train, x_test, y_train, y_test = train_test_split(amino, label, test_size=0.2, shuffle = False)
 
-x_train = tf.one_hot(x_train, depth =20).numpy()
-# x_test = tf.one_hot(x_test, depth =20).numpy()
-x_test = torch.from_numpy(tf.one_hot(x_test, depth =20).numpy())
-# y_train = tf.one_hot(y_train, depth =3).numpy()
-# y_test = tf.one_hot(y_test, depth =3).numpy()
+x_train = torch.from_numpy(tf.one_hot(x_train, depth =20).numpy()).to(device)
+x_test = torch.from_numpy(tf.one_hot(x_test, depth =20).numpy()).to(device)
+y_train = torch.from_numpy(y_train).to(device)
+y_test = torch.from_numpy(y_test).to(device)
 
-dataset = TensorDataset(Tensor(x_train),Tensor(y_train))
+trainset = TensorDataset(x_train,y_train)
+# valset = TensorDataset(Tensor(x_test),Tensor(y_test))
 
-loader = DataLoader(dataset, batch_size = 64)
+
+loader = DataLoader(trainset, batch_size = 64)
 i1,l1 = next(iter(loader))
 
 amino = tf.one_hot(amino,depth = 20).numpy()
 label = tf.one_hot(label, depth = 3).numpy()
 # Begin model
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+# Device for achille - Requirement pytorch 1.7.1, torchivision 0.8.2 and audio 0.7.2
+# Achille Cuda 10.1
 print(device)
 print('!!!!!!!!!')
 model = MLP()
@@ -216,11 +220,12 @@ optimizer = optim.Adam(model.parameters(), lr=0.0001)
 train_losses = []
 val_losses = []
 
-for epoch in range(20):
+for epoch in range(100):
     running_loss = 0.0
     for i, data in enumerate(loader, 0):
-        inputs,labels = data[0].to(device), data[1].to(device)
-        labels = labels.long()
+        inputs,labels = data
+        # inputs,labels = data[0].to(device), data[1].to(device)
+        # labels = labels.long()
         optimizer.zero_grad()
         outputs = model(inputs)
         # outputs = outputs.permute(0, 2, 1)
