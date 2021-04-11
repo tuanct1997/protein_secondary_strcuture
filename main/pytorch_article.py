@@ -16,6 +16,7 @@ import tensorflow as tf
 from sklearn.metrics import accuracy_score
 from torch.utils.data import DataLoader, TensorDataset
 from torch import Tensor
+import time
 # Load dataset
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 DATA_TRAIN = pd.read_csv('protein-secondary-structure.train', skiprows = 9, delim_whitespace = True, header = None, names =['amino','label'])
@@ -60,6 +61,7 @@ class RNN(nn.Module):
     """docstring for RNN"""
     def __init__(self):
         super(RNN, self).__init__()
+        # ,nonlinearity = 'relu' -- Not good as default tanh
         self.rnn = nn.RNN(20,128)
         self.rnn1 = nn.RNN(128,64)
         self.dense = nn.Linear(64,3)
@@ -80,11 +82,11 @@ class RNN(nn.Module):
 class MLP(nn.Module):
     def __init__(self):
         super(MLP, self).__init__()
-        self.dense1 = nn.Linear(20,700)
-        self.dense2 = nn.Linear(700, 500)
-        self.dense3 = nn.Linear(500,300)
+        self.dense1 = nn.Linear(20,500)
+        self.dense2 = nn.Linear(500, 300)
+        self.dense3 = nn.Linear(300,100)
         self.dropout = nn.Dropout(0.5)
-        self.dense4 = nn.Linear(300*5, 3)
+        self.dense4 = nn.Linear(100*5, 3)
         self.act = nn.ReLU()
         # self.softmax = torch.nn.Softmax()
 
@@ -229,6 +231,7 @@ label = tf.one_hot(label, depth = 3).numpy()
 # Achille Cuda 10.1
 print(device)
 print('!!!!!!!!!')
+
 model = MLP()
 model2 = LSTM()
 model3 = RNN()
@@ -236,19 +239,20 @@ model3.to(device)
 model2.to(device)
 model.to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 train_losses = []
 val_losses = []
 paitent = 0
 old = 0
-for epoch in range(250):
+start_time = time.time()
+for epoch in range(100):
     running_loss = 0.0
     for i, data in enumerate(loader, 0):
         inputs,labels = data
         # inputs,labels = data[0].to(device), data[1].to(device)
         # labels = labels.long()
         optimizer.zero_grad()
-        outputs = model3(inputs)
+        outputs = model(inputs)
         # outputs = outputs.permute(0, 2, 1)
         loss = criterion(outputs, labels)
         loss.backward()
@@ -270,7 +274,7 @@ for epoch in range(250):
     # if paitent == 5:
     #     print("EARLY STOP")
     #     break
-
+print("--- %s seconds ---" % (time.time() - start_time))
 print("DONE")
 outputs = model3(x_test)
 print(outputs)
