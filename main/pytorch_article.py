@@ -65,19 +65,19 @@ class MLP(torch.nn.Module):
     def __init__(self):
         super(MLP, self).__init__()
         self.dense1 = torch.nn.Linear(20,500)
-        self.dense2 = torch.nn.Linear(500, 500)
-        self.dense3 = torch.nn.Linear(500*5,400)
+        self.dense2 = torch.nn.Linear(500, 300)
+        self.dense3 = torch.nn.Linear(300,200)
         self.dropout = nn.Dropout(0.5)
-        self.dense4 = torch.nn.Linear(400, 3)
+        self.dense4 = torch.nn.Linear(200*5, 3)
         self.act = torch.nn.ReLU()
         # self.softmax = torch.nn.Softmax()
 
     def forward(self, x):
         x = self.act(self.dense1(x))
         x = self.act(self.dense2(x))
-        x = x.view(x.size(0),-1)
         x = self.act(self.dense3(x))
         x = self.dropout(x)
+        x = x.view(x.size(0),-1)
         x = self.dense4(x)
         # x = self.softmax(x)
         return x
