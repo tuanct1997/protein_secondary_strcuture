@@ -56,9 +56,9 @@ class LSTM(nn.Module):
 
         self.lstm = nn.LSTM(20, 300) # (10, 50)
         self.lstm1 = nn.LSTM(300, 200) # (10, 50)
-        self.lstm2 = nn.LSTM(100, 50) # (10, 50)
+        self.lstm2 = nn.LSTM(200, 100) # (10, 50)
         self.dropout = nn.Dropout(0.5) # 0.1
-        self.dense = nn.Linear(50, 3) # (50, 16)
+        self.dense = nn.Linear(100, 3) # (50, 16)
         self.act = nn.ReLU()
 
     def forward(self, x):
