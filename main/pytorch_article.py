@@ -145,13 +145,13 @@ def re_formatdata(data):
     return total,label
 
 def map_int(ls):
-    amino_dict = {}
+    final_map = {}
     code = 0
     for i in ls:
-        amino_dict[i] = code
+        final_map[i] = code
         code += 1
 
-    return amino_dict
+    return final_map
 
 
 def encoding_to_int(df,first_map,second_map):

@@ -33,18 +33,50 @@ second_map = second_map['label']
 DATA_TRAIN.fillna(0,inplace = True)
 DATA_TEST.fillna(0,inplace = True)
 
-class LSTM(object):
-    """docstring for LSTM"""
-    def __init__(self):
-        super(LSTM, self).__init__()
-        self.arg = arg
-        
+class LSTM(nn.Module):
 
-class RNN(object):
+    def __init__(self):
+        super().__init__()
+
+        self.lstm = nn.LSTM(20, 128) # (10, 50)
+        self.lstm1 = nn.LSTM(128, 64) # (10, 50)
+        self.dropout = nn.Dropout(0.5) # 0.1
+        self.dense = nn.Linear(64, 3) # (50, 16)
+        self.act = nn.ReLU()
+        self.softmax = torch.nn.Softmax()
+
+    def forward(self, x):
+        # print(x.shape)
+        lstm_out, lstm_hidden = self.lstm(x)
+        lstm_out, lstm_hidden = self.lstm1(lstm_out)
+        lstm_out = self.act(lstm_out)
+        drop_out = self.dropout(lstm_out)
+        output = self.dense(drop_out)
+        output = self.softmax(output)
+        # print(output)
+        # print(a)
+        return output
+
+class RNN(nn.Module):
     """docstring for RNN"""
-    def __init__(self, arg):
+    def __init__(self):
         super(RNN, self).__init__()
-        self.arg = arg
+        # ,nonlinearity = 'relu' -- Not good as default tanh
+        self.rnn = nn.RNN(20,128)
+        self.rnn1 = nn.RNN(128,64)
+        self.dense = nn.Linear(64,3)
+        self.act = nn.ReLU()
+        self.dropout = nn.Dropout(0.5)
+
+    def forward(self,x):
+        rnn_out, rnn_hidden = self.rnn(x)
+        rnn_out, rnn_hidden = self.rnn1(rnn_out)
+        rnn_out = self.act(rnn_out)
+        rnn_out = self.dropout(rnn_out)
+        output = self.dense(rnn_out)
+
+        return output
+        
         
 class MLP(torch.nn.Module):
     def __init__(self):
@@ -75,13 +107,6 @@ def add_pading(ls,lenght):
         return ls
     else:
         return ls
-
-def article_padding(ls):
-    padding = [0,0]
-    ls.insert(0,padding)
-    ls.insert(len(ls),x)
-    print(ls)
-    return ls
 
 #reformat the dataset 
 def re_formatdata(data):
@@ -166,21 +191,18 @@ processed_train = pd.DataFrame({'amino':totaltrain,'label':labeltrain})
 processed_test = pd.DataFrame({'amino':totaltest,'label':labeltest})
 
 
-data['amino_count'] = data['amino'].apply(lambda x: len(x))
+processed_train['amino_count'] = processed_train['amino'].apply(lambda x: len(x))
 
 lenght = processed_train['amino_count'].max()
 # padding sequences
-x = article_padding(rows['amino'][0])
-print(x)
-print(a)
-for idx,rows in data.iterrows():
-    data.at[idx,'amino'] = add_pading(rows['amino'],lenght)
-    data.at[idx,'label'] = add_pading(rows['label'],lenght)
+for idx,rows in processed_train.iterrows():
+    processed_train.at[idx,'amino'] = add_pading(rows['amino'],lenght)
+    processed_train.at[idx,'label'] = add_pading(rows['label'],lenght)
 
-data = encoding_to_int(data,amino_map,second_map)
-data.drop(['amino_count'],axis = 1, inplace = True)
-amino = np.array(data['amino'].to_list())
-label = np.array(data['label'].to_list())
+processed_train = encoding_to_int(processed_train,amino_map,second_map)
+processed_train.drop(['amino_count'],axis = 1, inplace = True)
+amino = np.array(processed_train['amino'].to_list())
+label = np.array(processed_train['label'].to_list())
 
 x_train, x_test, y_train, y_test = train_test_split(amino, label, test_size=0.2)
 
@@ -200,7 +222,7 @@ print(y_test)
 print(x_test.shape)
 print('==========')
 # Begin model
-model = MLP()
+model = LSTM()
 criterion = nn.BCELoss()
 optimizer = optim.SGD(model.parameters(), lr=0.0001)
 train_losses = []
