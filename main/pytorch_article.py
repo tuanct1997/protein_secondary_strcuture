@@ -54,19 +54,20 @@ class LSTM(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.lstm = nn.LSTM(20, 128) # (10, 50)
-        # self.lstm1 = nn.LSTM(128, 64) # (10, 50)
+        self.lstm = nn.LSTM(20, 300) # (10, 50)
+        self.lstm1 = nn.LSTM(300, 200) # (10, 50)
+        self.lstm2 = nn.LSTM(100, 50) # (10, 50)
         self.dropout = nn.Dropout(0.5) # 0.1
-        self.dense = nn.Linear(128, 3) # (50, 16)
+        self.dense = nn.Linear(50, 3) # (50, 16)
         self.act = nn.ReLU()
 
     def forward(self, x):
-        lstm_out, lstm_hidden = self.lstm(x, None)
-        # lstm_out, lstm_hidden = self.lstm(lstm_out, None)
-        # print(lstm_out)
-        # print(lstm_out.shape)
+        # print(x.shape)
+        lstm_out, lstm_hidden = self.lstm(x)
+        lstm_out, lstm_hidden = self.lstm1(lstm_out)
+        lstm_out, lstm_hidden = self.lstm2(lstm_out)
+
         lstm_out = lstm_out[:,-1,:]
-        # print(lstm_out.shape)
         drop_out = self.dropout(lstm_out)
         output = self.dense(drop_out)
         # print(output)
@@ -250,7 +251,7 @@ model2 = LSTM()
 model2.to(device)
 model.to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0001)
+optimizer = optim.SGD(model.parameters(), lr=0.0001)
 train_losses = []
 val_losses = []
 
@@ -266,11 +267,10 @@ for epoch in range(100):
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
-
         running_loss += loss.item()
         if i == len(loader)-1 :
             print('[%d, %5d] loss: %.3f' %
-                  (epoch + 1, i + 1, running_loss / 2000))
+                  (epoch + 1, i + 1, running_loss / 270))
             running_loss = 0.0
 
 print("DONE")
