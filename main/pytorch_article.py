@@ -14,15 +14,29 @@ import torch.optim as optim
 from torch.autograd import Variable
 import tensorflow as tf
 from sklearn.metrics import accuracy_score
-
+from torch.utils.data import DataLoader, TensorDataset
+from torch import Tensor
 # Load dataset
-pd.options.display.max_colwidth
-np.set_printoptions(threshold=np.inf)
 DATA_TRAIN = pd.read_csv('protein-secondary-structure.train', skiprows = 9, delim_whitespace = True, header = None, names =['amino','label'])
 DATA_TEST = pd.read_csv('protein-secondary-structure.test', skiprows = 9, delim_whitespace = True, header = None, names =['amino','label'])
 
-# DATA = pd.concat([DATA_TRAIN,DATA_TEST])
 
+# transform = transforms.Compose(
+#     [transforms.ToTensor(),
+#      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+# batch_size = 4
+
+# trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+#                                         download=True, transform=transform)
+# trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+#                                           shuffle=True, num_workers=2)
+
+# i1,l1 = next(iter(trainloader))
+# print(i1.shape)
+# print(l1.shape)
+# print(l1)
+# print(a)
 
 amino_map = DATA_TRAIN.copy()
 second_map = DATA_TRAIN.copy()
@@ -49,23 +63,25 @@ class RNN(object):
 class MLP(torch.nn.Module):
     def __init__(self):
         super(MLP, self).__init__()
-        self.dense1 = torch.nn.Linear(20,128)
-        self.relu = torch.nn.ReLU()
-        # self.dense2 = torch.nn.Linear(128, 64)
-        self.dense3 = torch.nn.Linear(128, 64)
+        self.dense1 = torch.nn.Linear(20,500)
+        self.dense2 = torch.nn.Linear(500, 500)
+        self.dense3 = torch.nn.Linear(500*5,400)
         self.dropout = nn.Dropout(0.5)
-        self.dense4 = torch.nn.Linear(64, 3)
-        self.softmax = torch.nn.Softmax()
+        self.dense4 = torch.nn.Linear(400, 3)
+        self.act = torch.nn.ReLU()
+        # self.softmax = torch.nn.Softmax()
 
     def forward(self, x):
-        x = self.dense1(x)
-        x = self.relu(x)
-        # x = self.dense2(x)
-        x = self.dense3(x)
+        x = self.act(self.dense1(x))
+        x = self.act(self.dense2(x))
+        x = x.view(x.size(0),-1)
+        x = self.act(self.dense3(x))
         x = self.dropout(x)
         x = self.dense4(x)
-        x = self.softmax(x)
+        # x = self.softmax(x)
         return x
+
+
 
 def article_padding(ls):
     ls.insert(0,0)
@@ -139,21 +155,15 @@ def encoding_to_int(df,first_map,second_map):
 
     return df
 
-def metrics_protein(result,prediction):
-    
+def check_acc(result,prediction):
     count = 0
-    percentage_ls = []
-    for idx,val in enumerate(result):
-        # prediction[idx] = prediction[:len(val)]
-        for idx2,val2 in enumerate(val):
-            if val2 == prediction[idx][idx2] and val2 != 20:
-                count += 1
-        leng = [i for i in val if i != 20]
-        percentage = count/len(leng)
-        count = 0
-        percentage_ls.append(percentage)
+    for index,val in enumerate(prediction):
+        if val == result[index]:
+            count += 1
 
-    return sum(percentage_ls)/len(percentage_ls)
+    return count/len(result)
+
+
 
 totaltrain,labeltrain= re_formatdata(DATA_TRAIN)
 totaltest,labeltest= re_formatdata(DATA_TEST)
@@ -173,51 +183,65 @@ test = pd.DataFrame({'amino':totaltest,'label':labeltest})
 
 processed_train = final_df(train)
 processed_test = final_df(test)
-print(processed_train.info())
-print(processed_train.head(10))
 
 processed_train = encoding_to_int(processed_train,amino_map,second_map)
 processed_test = encoding_to_int(processed_test,amino_map,second_map)
-print(processed_train.info())
-print(processed_train.head(10))
+# .flatten()
 amino = np.array(processed_train['amino'].to_list())
-label = np.array(processed_train['label'].to_list())
+label = np.array(processed_train['label'].to_list()).flatten()
 
-x_train, x_test, y_train, y_test = train_test_split(amino, label, test_size=0.2)
+x_train, x_test, y_train, y_test = train_test_split(amino, label, test_size=0.2, shuffle = False)
 
-# convert to torch format
-x_train = torch.from_numpy(tf.one_hot(x_train, depth =20).numpy())
+x_train = tf.one_hot(x_train, depth =20).numpy()
+# x_test = tf.one_hot(x_test, depth =20).numpy()
 x_test = torch.from_numpy(tf.one_hot(x_test, depth =20).numpy())
-y_train = torch.from_numpy(tf.one_hot(y_train, depth =3).numpy())
-y_test = torch.from_numpy(tf.one_hot(y_test, depth =3).numpy())
+# y_train = tf.one_hot(y_train, depth =3).numpy()
+# y_test = tf.one_hot(y_test, depth =3).numpy()
 
-# x_train = F.one_hot(torch.from_numpy(x_train))
-# x_test = F.one_hot(torch.from_numpy(x_test))
-# y_train = F.one_hot(torch.from_numpy(y_train))
-# y_test = F.one_hot(torch.from_numpy(y_test))
-print(x_train.shape)
-print(y_train.shape)
-print(y_test)
-print(x_test.shape)
-print('==========')
+dataset = TensorDataset(Tensor(x_train),Tensor(y_train))
+
+loader = DataLoader(dataset, batch_size = 64)
+i1,l1 = next(iter(loader))
+
+amino = tf.one_hot(amino,depth = 20).numpy()
+label = tf.one_hot(label, depth = 3).numpy()
 # Begin model
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = MLP()
-criterion = nn.BCELoss()
-optimizer = optim.SGD(model.parameters(), lr=0.0001)
+model.to(device)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.0001)
 train_losses = []
 val_losses = []
 
-for epoch in range(100):
+for epoch in range(20):
     running_loss = 0.0
-    optimizer.zero_grad()
-    outputs = model(x_train)
-    # outputs = outputs.permute(0, 2, 1)
-    loss = criterion(outputs, y_train)
-    loss.backward()
-    optimizer.step()
+    for i, data in enumerate(loader, 0):
+        inputs,labels = data[0].to(device), data[1].to(device)
+        labels = labels.long()
+        optimizer.zero_grad()
+        outputs = model(inputs)
+        # outputs = outputs.permute(0, 2, 1)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
 
-    print("EPOCH NUMBER {}: AND TRAIN LOSS {}".format(epoch,loss.item()))
+        running_loss += loss.item()
+        if i == len(loader)-1 :
+            print('[%d, %5d] loss: %.3f' %
+                  (epoch + 1, i + 1, running_loss / 2000))
+            running_loss = 0.0
+
+print("DONE")
 outputs = model(x_test)
+print(outputs)
+print(outputs.shape)
+_, predicted = torch.max(outputs,1)
+
+acc = check_acc(y_test, predicted)
+print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+print(acc)
+print(a)
 percentage_ls = []
 for idx,val1 in enumerate(outputs):
     count = 0

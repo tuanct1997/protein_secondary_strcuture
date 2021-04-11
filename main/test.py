@@ -16,7 +16,7 @@ from sklearn.preprocessing import LabelEncoder
 from keras.callbacks import TensorBoard
 import tensorflow as tf
 from keras.datasets import mnist
-
+from sklearn.model_selection import KFold
 # pre-processing dataset
 
 DATA_TRAIN = pd.read_csv('protein-secondary-structure.train', skiprows = 9, delim_whitespace = True, header = None, names =['amino','label'])
@@ -149,7 +149,6 @@ test = pd.DataFrame({'amino':totaltest,'label':labeltest})
 processed_train = final_df(train)
 processed_test = final_df(test)
 
-
 processed_train = encoding_to_int(processed_train,amino_map,second_map)
 processed_test = encoding_to_int(processed_test,amino_map,second_map)
 # .flatten()
@@ -172,68 +171,103 @@ y_test = tf.one_hot(y_test, depth =3).numpy()
 # y_test = y_test.reshape((y_test.shape[0],1,1,3))
 print(y_train.shape)
 print(y_train)
+print(x_train.shape)
+print('!!!!!!!!!!!!!!!!!!!')
 # print(y_train[0])
+amino = tf.one_hot(amino,depth = 20).numpy()
+label = tf.one_hot(label, depth = 3).numpy()
+cvscores = []
 
-cv_score = []
 
-
-model = keras.Sequential()
-# model.add(layers.Dense(128, input_shape = (498,21) , activation ='relu'))
-# model.add(layers.Dense(8,activation ='relu'))
-# model.add(layers.Masking(mask_value=0., input_shape=20))
-# model.add(layers.LSTM(128,return_sequences = False, input_shape = (5,20)))#recurrent layer , 128 neurons
-model.add(layers.Bidirectional(layers.GRU(64,return_sequences=True, activation = 'relu'), input_shape = (5,20)))#recurrent layer 1, 64 neurons
-model.add(layers.Bidirectional(layers.GRU(32, return_sequences=False, activation = 'relu'))) #recurrent layer 2, 32 neurons
-# model.add(layers.Bidirectional(layers.GRU(8,return_sequences=True))) #recurrent layer 3, 16 neurons
+# model = keras.Sequential()
+# # model.add(layers.Dense(128, input_shape = (498,21) , activation ='relu'))
+# # model.add(layers.Dense(8,activation ='relu'))
+# # model.add(layers.Masking(mask_value=0., input_shape=20))
+# # model.add(layers.LSTM(128,return_sequences = False, input_shape = (5,20)))#recurrent layer , 128 neurons
+# # model.add(layers.Bidirectional(layers.GRU(64,return_sequences=True, activation = 'relu'), input_shape = (5,20)))#recurrent layer 1, 64 neurons
+# # model.add(layers.Bidirectional(layers.GRU(32, return_sequences=False, activation = 'relu'))) #recurrent layer 2, 32 neurons
+# # model.add(layers.Bidirectional(layers.GRU(8,return_sequences=True))) #recurrent layer 3, 16 neurons
 # model.add(layers.Dense(128,activation ='relu',input_shape = (5,20))) #Dense layer, 4 neurons tanh activation - classification output
 
-# model.add(layers.Dropout(0.5))
+# # model.add(layers.Dropout(0.5))
 # model.add(layers.Dense(64,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
-# model.add(layers.Dropout(0.5))
-# model.add(layers.Dense(32,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
-# model.add(layers.Dropout(0.5))
+# # model.add(layers.Dropout(0.5))
+# # model.add(layers.Dense(32,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+# # model.add(layers.Dropout(0.5))
 # model.add(layers.Dense(16,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
-# model.add(layers.Dropout(0.5))
-# model.add(layers.Dense(8,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
+# # model.add(layers.Dropout(0.5))
+# # model.add(layers.Dense(8,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 # model.add(layers.Dropout(0.5))
 # model.add(layers.Flatten())
-model.add(layers.Dense(3,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
+# model.add(layers.Dense(3,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
+# # model.summary()
+
+# opt = keras.optimizers.Adam(learning_rate=0.0001)
+# model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+
 # model.summary()
 
-opt = keras.optimizers.Adam(learning_rate=0.0001)
-model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+# es = EarlyStopping(monitor='val_loss', patience=5, verbose=2, mode = 'min', min_delta = 1e-2)
+# history = model.fit(
+#     x_train, y_train,
+#     epochs=500, batch_size=32,
+#     validation_data=(x_test, y_test),
+#     verbose = 2,
+#     callbacks=[es]
+#     )
+# scores = model.evaluate(x_test, y_test, verbose=2)
+# print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+# cv_score.append(scores[1] * 100)
+# print("%.2f%% (+/- %.2f%%)" % (np.mean(cv_score), np.std(cv_score)))
 
-model.summary()
+kfold = KFold(n_splits=5, shuffle=True)
+for train, test in kfold.split(amino, label):
+    model = keras.Sequential()
+    model.add(layers.Dense(500,activation ='relu',input_shape = (5,20)))
+    model.add(layers.Dense(300,activation ='relu'))
+    model.add(layers.Dense(200,activation ='relu'))
+    model.add(layers.Dropout(0.5))
+    model.add(layers.Flatten())
+    model.add(layers.Dense(3,activation='softmax'))
+    opt = keras.optimizers.Adam(learning_rate = 0.0001)
+    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+    model.summary()
+    history = model.fit(
+        amino[train], label[train],
+        epochs=100, batch_size=64,
+        verbose = 2
+        )
+    scores = model.evaluate(amino[test], label[test], verbose=2)
+    print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+    cvscores.append(scores[1] * 100)
 
-es = EarlyStopping(monitor='val_loss', patience=10, verbose=2, min_delta = 1e-3)
-history = model.fit(
-    x_train, y_train,
-    epochs=500, batch_size=32,
-    validation_data=(x_test, y_test),
-    verbose = 2,
-    callbacks=[es]
-    )
-scores = model.evaluate(x_test, y_test, verbose=2)
-print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
-cv_score.append(scores[1] * 100)
-print("%.2f%% (+/- %.2f%%)" % (np.mean(cv_score), np.std(cv_score)))
+print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
+
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'val'], loc='upper left')
+plt.show()
+
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'val'], loc='upper left')
+plt.show()
+
+amino = tf.one_hot(amino, depth =20).numpy()
+ynew = model.predict_classes(amino)
+print(ynew)
+ynew.tolist()
+print(list(set(ynew)))
+print(label)
+print(ynew.shape)
+print(label.shape)
 print(a)
-# plt.plot(history.history['accuracy'])
-# plt.plot(history.history['val_accuracy'])
-# plt.title('model accuracy')
-# plt.ylabel('accuracy')
-# plt.xlabel('epoch')
-# plt.legend(['train', 'val'], loc='upper left')
-# plt.show()
-
-# plt.plot(history.history['loss'])
-# plt.plot(history.history['val_loss'])
-# plt.title('model loss')
-# plt.ylabel('loss')
-# plt.xlabel('epoch')
-# plt.legend(['train', 'val'], loc='upper left')
-# plt.show()
-
 # def metric(result,predict):
 #     for idx,val in enumerate(result):
 
