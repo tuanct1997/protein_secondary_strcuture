@@ -64,11 +64,11 @@ class RNN(object):
 class MLP(torch.nn.Module):
     def __init__(self):
         super(MLP, self).__init__()
-        self.dense1 = torch.nn.Linear(20,500)
-        self.dense2 = torch.nn.Linear(500, 300)
-        self.dense3 = torch.nn.Linear(300,200)
+        self.dense1 = torch.nn.Linear(20,1000)
+        self.dense2 = torch.nn.Linear(1000, 500)
+        self.dense3 = torch.nn.Linear(500,300)
         self.dropout = nn.Dropout(0.5)
-        self.dense4 = torch.nn.Linear(200*5, 3)
+        self.dense4 = torch.nn.Linear(300*5, 3)
         self.act = torch.nn.ReLU()
         # self.softmax = torch.nn.Softmax()
 
