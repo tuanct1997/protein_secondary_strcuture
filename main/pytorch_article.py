@@ -207,6 +207,8 @@ amino = tf.one_hot(amino,depth = 20).numpy()
 label = tf.one_hot(label, depth = 3).numpy()
 # Begin model
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(device)
+print('!!!!!!!!!')
 model = MLP()
 model.to(device)
 criterion = nn.CrossEntropyLoss()
