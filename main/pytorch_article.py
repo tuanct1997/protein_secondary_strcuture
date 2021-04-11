@@ -22,23 +22,6 @@ DATA_TRAIN = pd.read_csv('protein-secondary-structure.train', skiprows = 9, deli
 DATA_TEST = pd.read_csv('protein-secondary-structure.test', skiprows = 9, delim_whitespace = True, header = None, names =['amino','label'])
 
 
-# transform = transforms.Compose(
-#     [transforms.ToTensor(),
-#      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
-# batch_size = 4
-
-# trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-#                                         download=True, transform=transform)
-# trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-#                                           shuffle=True, num_workers=2)
-
-# i1,l1 = next(iter(trainloader))
-# print(i1.shape)
-# print(l1.shape)
-# print(l1)
-# print(a)
-
 amino_map = DATA_TRAIN.copy()
 second_map = DATA_TRAIN.copy()
 amino_map.dropna(inplace = True)
@@ -65,6 +48,7 @@ class LSTM(nn.Module):
         lstm_out, lstm_hidden = self.lstm(x)
         lstm_out, lstm_hidden = self.lstm1(lstm_out)
         lstm_out = lstm_out[:,-1,:]
+        lstm_out = self.act(lstm_out)
         drop_out = self.dropout(lstm_out)
         output = self.dense(drop_out)
         # print(output)
@@ -72,24 +56,26 @@ class LSTM(nn.Module):
         return output
 
 
-
-# class LSTM(nn.Module):
-#     """docstring for LSTM"""
-#     def __init__(self):
-#         super(LSTM, self).__init__()
-#         self.lstm = nn.LSTM(20,500)
-#         self.dense = nn.Linear(500,3)
-#         self.hidden_cell = (torch.zeros(1,1,100), torch.zeros(1,1,100))
-
-#     def forward(self,x):
-#         lstm_out, self.hidden_cell = self.lstm(x.view(len(x),1,-1), self.hidden_cell)
-        
-
-class RNN(object):
+class RNN(nn.Module):
     """docstring for RNN"""
-    def __init__(self, arg):
+    def __init__(self):
         super(RNN, self).__init__()
-        self.arg = arg
+        self.rnn = nn.RNN(20,128)
+        self.rnn1 = nn.RNN(128,64)
+        self.dense = nn.Linear(64,3)
+        self.act = nn.ReLU()
+        self.dropout = nn.Dropout(0.5)
+
+    def forward(self,x):
+        rnn_out, rnn_hidden = self.rnn(x)
+        rnn_out, rnn_hidden = self.rnn1(rnn_out)
+        rnn_out = rnn_out[:,-1,:]
+        rnn_out = self.act(rnn_out)
+        rnn_out = self.dropout(rnn_out)
+        output = self.dense(rnn_out)
+
+        return output
+        
         
 class MLP(nn.Module):
     def __init__(self):
@@ -245,13 +231,16 @@ print(device)
 print('!!!!!!!!!')
 model = MLP()
 model2 = LSTM()
+model3 = RNN()
+model3.to(device)
 model2.to(device)
 model.to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 train_losses = []
 val_losses = []
-
+paitent = 0
+old = 0
 for epoch in range(100):
     running_loss = 0.0
     for i, data in enumerate(loader, 0):
@@ -259,19 +248,30 @@ for epoch in range(100):
         # inputs,labels = data[0].to(device), data[1].to(device)
         # labels = labels.long()
         optimizer.zero_grad()
-        outputs = model2(inputs)
+        outputs = model3(inputs)
         # outputs = outputs.permute(0, 2, 1)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
         if i == len(loader)-1 :
-            print('[%d, %5d] loss: %.3f' %
+            print('[%d, %5d] loss: %.5f' %
                   (epoch + 1, i + 1, running_loss / 270))
+            print(running_loss/270 - old)
+            if running_loss/270 - old > 1e-3 :
+                print('aaaaa')
+                paitent += 1
+            else :
+                print('23232')
+                paitent = 0
+            old = running_loss / 270
             running_loss = 0.0
+    if paitent == 5:
+        print("EARLY STOP")
+        break
 
 print("DONE")
-outputs = model2(x_test)
+outputs = model3(x_test)
 print(outputs)
 print(outputs.shape)
 _, predicted = torch.max(outputs,1)
