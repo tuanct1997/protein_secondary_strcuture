@@ -48,11 +48,43 @@ second_map = second_map['label']
 DATA_TRAIN.fillna(0,inplace = True)
 DATA_TEST.fillna(0,inplace = True)
 
-class LSTM(object):
-    """docstring for LSTM"""
+
+class LSTM(nn.Module):
+
     def __init__(self):
-        super(LSTM, self).__init__()
-        self.arg = arg
+        super().__init__()
+
+        self.lstm = nn.LSTM(20, 128) # (10, 50)
+        # self.lstm1 = nn.LSTM(128, 64) # (10, 50)
+        self.dropout = nn.Dropout(0.5) # 0.1
+        self.dense = nn.Linear(128, 3) # (50, 16)
+        self.act = nn.ReLU()
+
+    def forward(self, x):
+        lstm_out, lstm_hidden = self.lstm(x, None)
+        # lstm_out, lstm_hidden = self.lstm(lstm_out, None)
+        # print(lstm_out)
+        # print(lstm_out.shape)
+        lstm_out = lstm_out[:,-1,:]
+        # print(lstm_out.shape)
+        drop_out = self.dropout(lstm_out)
+        output = self.dense(drop_out)
+        # print(output)
+        # print(a)
+        return output
+
+
+
+# class LSTM(nn.Module):
+#     """docstring for LSTM"""
+#     def __init__(self):
+#         super(LSTM, self).__init__()
+#         self.lstm = nn.LSTM(20,500)
+#         self.dense = nn.Linear(500,3)
+#         self.hidden_cell = (torch.zeros(1,1,100), torch.zeros(1,1,100))
+
+#     def forward(self,x):
+#         lstm_out, self.hidden_cell = self.lstm(x.view(len(x),1,-1), self.hidden_cell)
         
 
 class RNN(object):
@@ -61,15 +93,15 @@ class RNN(object):
         super(RNN, self).__init__()
         self.arg = arg
         
-class MLP(torch.nn.Module):
+class MLP(nn.Module):
     def __init__(self):
         super(MLP, self).__init__()
-        self.dense1 = torch.nn.Linear(20,1000)
-        self.dense2 = torch.nn.Linear(1000, 500)
-        self.dense3 = torch.nn.Linear(500,300)
+        self.dense1 = nn.Linear(20,700)
+        self.dense2 = nn.Linear(700, 500)
+        self.dense3 = nn.Linear(500,300)
         self.dropout = nn.Dropout(0.5)
-        self.dense4 = torch.nn.Linear(300*5, 3)
-        self.act = torch.nn.ReLU()
+        self.dense4 = nn.Linear(300*5, 3)
+        self.act = nn.ReLU()
         # self.softmax = torch.nn.Softmax()
 
     def forward(self, x):
@@ -214,6 +246,7 @@ label = tf.one_hot(label, depth = 3).numpy()
 print(device)
 print('!!!!!!!!!')
 model = MLP()
+model2 = LSTM()
 model.to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.0001)
@@ -227,7 +260,7 @@ for epoch in range(100):
         # inputs,labels = data[0].to(device), data[1].to(device)
         # labels = labels.long()
         optimizer.zero_grad()
-        outputs = model(inputs)
+        outputs = model2(inputs)
         # outputs = outputs.permute(0, 2, 1)
         loss = criterion(outputs, labels)
         loss.backward()
@@ -240,7 +273,7 @@ for epoch in range(100):
             running_loss = 0.0
 
 print("DONE")
-outputs = model(x_test)
+outputs = model2(x_test)
 print(outputs)
 print(outputs.shape)
 _, predicted = torch.max(outputs,1)

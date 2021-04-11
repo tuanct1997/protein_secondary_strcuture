@@ -179,13 +179,13 @@ label = tf.one_hot(label, depth = 3).numpy()
 cvscores = []
 
 
-# model = keras.Sequential()
+model = keras.Sequential()
 # # model.add(layers.Dense(128, input_shape = (498,21) , activation ='relu'))
 # # model.add(layers.Dense(8,activation ='relu'))
 # # model.add(layers.Masking(mask_value=0., input_shape=20))
-# # model.add(layers.LSTM(128,return_sequences = False, input_shape = (5,20)))#recurrent layer , 128 neurons
-# # model.add(layers.Bidirectional(layers.GRU(64,return_sequences=True, activation = 'relu'), input_shape = (5,20)))#recurrent layer 1, 64 neurons
-# # model.add(layers.Bidirectional(layers.GRU(32, return_sequences=False, activation = 'relu'))) #recurrent layer 2, 32 neurons
+# model.add(layers.LSTM(128,return_sequences = False, input_shape = (5,20)))#recurrent layer , 128 neurons
+model.add(layers.Bidirectional(layers.GRU(64,return_sequences=True, activation = 'relu'), input_shape = (5,20)))#recurrent layer 1, 64 neurons
+model.add(layers.Bidirectional(layers.GRU(32, return_sequences=False, activation = 'relu'))) #recurrent layer 2, 32 neurons
 # # model.add(layers.Bidirectional(layers.GRU(8,return_sequences=True))) #recurrent layer 3, 16 neurons
 # model.add(layers.Dense(128,activation ='relu',input_shape = (5,20))) #Dense layer, 4 neurons tanh activation - classification output
 
@@ -199,49 +199,49 @@ cvscores = []
 # # model.add(layers.Dense(8,activation ='relu')) #Dense layer, 4 neurons tanh activation - classification output
 # model.add(layers.Dropout(0.5))
 # model.add(layers.Flatten())
-# model.add(layers.Dense(3,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
-# # model.summary()
+model.add(layers.Dense(3,activation='softmax'))#Dense layer, 4 neurons softmax activation - classification output
+model.summary()
 
-# opt = keras.optimizers.Adam(learning_rate=0.0001)
-# model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+opt = keras.optimizers.Adam(learning_rate=0.0001)
+model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
 
-# model.summary()
+model.summary()
 
-# es = EarlyStopping(monitor='val_loss', patience=5, verbose=2, mode = 'min', min_delta = 1e-2)
-# history = model.fit(
-#     x_train, y_train,
-#     epochs=500, batch_size=32,
-#     validation_data=(x_test, y_test),
-#     verbose = 2,
-#     callbacks=[es]
-#     )
-# scores = model.evaluate(x_test, y_test, verbose=2)
-# print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
-# cv_score.append(scores[1] * 100)
-# print("%.2f%% (+/- %.2f%%)" % (np.mean(cv_score), np.std(cv_score)))
+es = EarlyStopping(monitor='val_loss', patience=5, verbose=2, mode = 'min', min_delta = 1e-2)
+history = model.fit(
+    x_train, y_train,
+    epochs=500, batch_size=32,
+    validation_data=(x_test, y_test),
+    verbose = 2,
+    callbacks=[es]
+    )
+scores = model.evaluate(x_test, y_test, verbose=2)
+print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+cv_score.append(scores[1] * 100)
+print("%.2f%% (+/- %.2f%%)" % (np.mean(cv_score), np.std(cv_score)))
 
-kfold = KFold(n_splits=5, shuffle=True)
-for train, test in kfold.split(amino, label):
-    model = keras.Sequential()
-    model.add(layers.Dense(500,activation ='relu',input_shape = (5,20)))
-    model.add(layers.Dense(300,activation ='relu'))
-    model.add(layers.Dense(200,activation ='relu'))
-    model.add(layers.Dropout(0.5))
-    model.add(layers.Flatten())
-    model.add(layers.Dense(3,activation='softmax'))
-    opt = keras.optimizers.Adam(learning_rate = 0.0001)
-    model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
-    model.summary()
-    history = model.fit(
-        amino[train], label[train],
-        epochs=100, batch_size=64,
-        verbose = 2
-        )
-    scores = model.evaluate(amino[test], label[test], verbose=2)
-    print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
-    cvscores.append(scores[1] * 100)
+# kfold = KFold(n_splits=5, shuffle=True)
+# for train, test in kfold.split(amino, label):
+#     model = keras.Sequential()
+#     model.add(layers.Dense(500,activation ='relu',input_shape = (5,20)))
+#     model.add(layers.Dense(300,activation ='relu'))
+#     model.add(layers.Dense(200,activation ='relu'))
+#     model.add(layers.Dropout(0.5))
+#     model.add(layers.Flatten())
+#     model.add(layers.Dense(3,activation='softmax'))
+#     opt = keras.optimizers.Adam(learning_rate = 0.0001)
+#     model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+#     model.summary()
+#     history = model.fit(
+#         amino[train], label[train],
+#         epochs=100, batch_size=64,
+#         verbose = 2
+#         )
+#     scores = model.evaluate(amino[test], label[test], verbose=2)
+#     print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+#     cvscores.append(scores[1] * 100)
 
-print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
+# print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
 
 plt.plot(history.history['accuracy'])
 plt.plot(history.history['val_accuracy'])
