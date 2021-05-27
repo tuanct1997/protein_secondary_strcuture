@@ -36,11 +36,37 @@ DATA_TEST.fillna(0,inplace = True)
 
 
 
+class CNN(nn.Module):
+    def __init__(self):
+        super(CNN, self).__init__()
+        self.conv1 = nn.Conv1d(5,64,kernel_size = 1)
+        self.dropout = nn.Dropout(0.5)
+        self.pool_1 = nn.MaxPool1d(2)
+        self.dense = nn.Linear(640,100)
+        self.dense2 = nn.Linear(100,50)
+        self.dense3 = nn.Linear(50,3)
+
+    def forward(self,x):
+        x = self.conv1(x)
+        print("!!!!")
+        x = torch.relu(x)
+        print("!!!!")
+        x = self.pool_1(x)
+        print("!!!!")
+        print(x.shape)
+        x = x.view(x.size(0),-1) #flattern
+        x = self.dense(x)
+        x = self.dense2(x)
+        x = self.dropout(x)
+        output = self.dense3(x)
+        print("!!!!")
+        return output
+
 #LSTM MODEL
 class LSTM(nn.Module):
 
     def __init__(self):
-        super().__init__()
+        super(LSTM, self).__init__()
 
         self.lstm = nn.LSTM(20, 128) # 20 input size - 128 hidden size
         self.lstm1 = nn.LSTM(128, 64) # 128 input size - 64 hidden size
@@ -63,9 +89,9 @@ class RNN(nn.Module):
     def __init__(self):
         super(RNN, self).__init__()
         # ,nonlinearity = 'relu' -- Not good as default tanh - this to declare the activation function of RNN
-        self.rnn = nn.RNN(20,128) # 20 input size - 128 hidden size
-        self.rnn1 = nn.RNN(128,64)# 128 input size - 64 hidden size
-        self.dense = nn.Linear(64,3)# Dense - output is 3 classes
+        self.rnn = nn.RNN(20,500) # 20 input size - 128 hidden size
+        self.rnn1 = nn.RNN(500,300)# 128 input size - 64 hidden size
+        self.dense = nn.Linear(300,3)# Dense - output is 3 classes
         self.act = nn.ReLU()
         self.dropout = nn.Dropout(0.5)# dropout
 
@@ -260,7 +286,8 @@ trainset = TensorDataset(x_train,y_train)
 loader = DataLoader(trainset, batch_size = 64)
 #check if correctly
 i1,l1 = next(iter(loader))
-
+print(x_train[0])
+print(y_train.shape)
 # Begin model
 
 # Device for achille - Requirement pytorch 1.7.1, torchivision 0.8.2 and audio 0.7.2
@@ -274,9 +301,11 @@ print('!!!!!!!!!')
 model = MLP()
 model2 = LSTM()
 model3 = RNN()
+model4 = CNN()
 model3.to(device)
 model2.to(device)
 model.to(device)
+model4.to(device)
 
 # Declare Cross Entropy Loss with Adam optimizer with learning rate = 0.001
 criterion = nn.CrossEntropyLoss()
@@ -295,12 +324,15 @@ for epoch in range(100):
     # begin update with each mini-batch
     for i, data in enumerate(loader, 0):
         inputs,labels = data
+        print(inputs.shape)
         optimizer.zero_grad()
         # remember to replace model if we want another network 
         #model => MLP
         # model2 => LSTM
         # model3 => RNN
-        outputs = model3(inputs)
+        outputs = model4(inputs)
+        # print(outputs.shape)
+        # print(labels)
         # outputs = outputs.permute(0, 2, 1)
         loss = criterion(outputs, labels)
         loss.backward()
@@ -331,7 +363,7 @@ print("DONE")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Test - reaplace the model as the model we use for train above
 # x-test is val set
-outputs = model3(x_test)
+outputs = model4(x_test)
 print(outputs)
 print(outputs.shape)
 #convert output to final class
